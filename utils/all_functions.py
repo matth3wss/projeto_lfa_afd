@@ -1,3 +1,4 @@
+import csv
 import pandas as pd
 from collections import OrderedDict as od
 import string
@@ -529,3 +530,11 @@ def determinize_afnd(csv_df, afnd_df):
             afnd_df[col] = afnd_df[col].apply(
                 lambda x: f'[{indeterminism_without_comma}]' if x == value else x)
     return afnd_df
+
+
+def af_mapping(csv_df: pd.DataFrame) -> list:
+    pass
+
+
+def lexical_recognition(afd_df: pd.DataFrame) -> pd.DataFrame:
+    pass
