@@ -532,6 +532,29 @@ def determinize_afnd(csv_df, afnd_df):
     return afnd_df
 
 
+def read_new_words(csv_df: pd.DataFrame) -> dict:
+    """ Esta função lê um arquivo csv e retorna um dicionário com as palavras e seus respectivos índices.
+
+    Args:
+        csv_df (pd.DataFrame): DataFrame com as palavras a serem lidas.
+
+    Returns:
+        dict: Dicionário com as palavras e seus respectivos índices.
+    """
+    csv_df.rename(columns={0: 'entrada'}, inplace=True)
+    words = []
+
+    for index, value in enumerate(csv_df['entrada'], start=1):
+        lines = [x for x in value.split(' ') if x != '']
+        for word in lines:
+            json_data = {
+                'word': word,
+                'index': index,
+            }
+            words.append(json_data)
+    return words
+
+
 def af_mapping(csv_df: pd.DataFrame) -> list:
     pass
 
