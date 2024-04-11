@@ -536,6 +536,28 @@ def determinize_afnd(csv_df, afnd_df, final_states):
     
     return afnd_df, final_states
 
+def error_states(afd_df, final_states):
+    
+    # Contre de erro para estados que não possuem transição para todos os simbolos do alfabeto
+    new_state_error_transition = '*'
+    afd_df.loc[len(afd_df)] = [new_state_error_transition] + [new_state_error_transition] * (len(afd_df.columns) - 1)
+    
+    for column in afd_df.columns:
+        for index, value in afd_df[column].items():
+            if value == '' or value == None:
+                afd_df.at[index, column] = new_state_error_transition
+    
+    # Controle de erro para estados que não possuem o mapeamento de todos os simbolos da gramática
+    new_state_error = 'Z'
+    afd_df.loc[len(afd_df)] = [new_state_error] + [new_state_error] * (len(afd_df.columns) - 1)
+
+    new_column_name = 'etc.'
+    afd_df[new_column_name] = [new_state_error] * len(afd_df) #ou passa direto a variável new_state
+
+    final_states.append(new_state_error_transition)
+    final_states.append(new_state_error)
+
+    return afd_df, final_states
 
 def read_new_words(csv_df: pd.DataFrame) -> dict:
     """ Esta função lê um arquivo csv e retorna um dicionário com as palavras e seus respectivos índices.
