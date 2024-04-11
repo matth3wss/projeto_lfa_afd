@@ -529,35 +529,40 @@ def determinize_afnd(csv_df, afnd_df, final_states):
             # Use the apply method to apply the transformation to each cell
             afnd_df[col] = afnd_df[col].apply(
                 lambda x: f'[{indeterminism_without_comma}]' if x == value else x)
-            
+
     for state in afnd_df['sigma']:
         if any(x in state for x in final_states) and state not in final_states:
             final_states.append(state)
-    
+
     return afnd_df, final_states
 
+
 def error_states(afd_df, final_states):
-    
+
     # Contre de erro para estados que não possuem transição para todos os simbolos do alfabeto
     new_state_error_transition = '*'
-    afd_df.loc[len(afd_df)] = [new_state_error_transition] + [new_state_error_transition] * (len(afd_df.columns) - 1)
-    
+    afd_df.loc[len(afd_df)] = [new_state_error_transition] + \
+        [new_state_error_transition] * (len(afd_df.columns) - 1)
+
     for column in afd_df.columns:
         for index, value in afd_df[column].items():
             if value == '' or value == None:
                 afd_df.at[index, column] = new_state_error_transition
-    
+
     # Controle de erro para estados que não possuem o mapeamento de todos os simbolos da gramática
     new_state_error = 'Z'
-    afd_df.loc[len(afd_df)] = [new_state_error] + [new_state_error] * (len(afd_df.columns) - 1)
+    afd_df.loc[len(afd_df)] = [new_state_error] + \
+        [new_state_error] * (len(afd_df.columns) - 1)
 
     new_column_name = 'etc.'
-    afd_df[new_column_name] = [new_state_error] * len(afd_df) #ou passa direto a variável new_state
+    afd_df[new_column_name] = [new_state_error] * \
+        len(afd_df)  # ou passa direto a variável new_state
 
     final_states.append(new_state_error_transition)
     final_states.append(new_state_error)
 
     return afd_df, final_states
+
 
 def read_new_words(csv_df: pd.DataFrame) -> dict:
     """ Esta função lê um arquivo csv e retorna um dicionário com as palavras e seus respectivos índices.
@@ -582,8 +587,60 @@ def read_new_words(csv_df: pd.DataFrame) -> dict:
     return words
 
 
-def af_mapping(csv_df: pd.DataFrame) -> list:
-    pass
+def recursive_search(dataframe: pd.DataFrame, word: list) -> list:
+    """
+    Recursively searches for paths in a transition table DataFrame that match the given list of terminals.
+
+    Parameters:
+    dataframe (pd.DataFrame): DataFrame representing the transition table.
+    word (list): List of terminals to match.
+
+    Returns:
+    list: List of visited states.
+    """
+    visited_states = []
+
+    def search_from_state(state: str, word: list = word):
+        """
+        Recursively searches for paths from a given state.
+
+        Parameters:
+        state (str): The current state.
+
+        Returns:
+        list: List of visited states.
+        """
+        for terminal in word:
+            # print(terminal)
+            if terminal in dataframe.columns:
+                if dataframe.loc[dataframe['sigma'] == state, terminal].any():
+                    state = dataframe.loc[dataframe['sigma'] ==
+                                          state, terminal].values[0]
+
+                    if state not in visited_states:
+                        visited_states.append(state)
+                        search_from_state(state, word[1:])
+            else:
+                if dataframe.loc[dataframe['sigma'] == state, 'etc.'].any():
+                    state = dataframe.loc[dataframe['sigma']
+                                          == state, 'etc.'].values[0]
+
+                    if state not in visited_states:
+                        visited_states.append(state)
+                        return visited_states
+        return visited_states
+    # check type of teste
+    return search_from_state('S')
+
+
+def af_mapping(csv_df: pd.DataFrame, afd_df: pd.DataFrame) -> list:
+    words = read_new_words(csv_df)
+    for index, word in enumerate(words):
+        states = recursive_search(afd_df, word['word'])
+        words[index].update({'states': states})
+    ribbon = [word['states'][-1] for word in words] + ['$']
+
+    return words, ribbon
 
 
 def lexical_recognition(afd_df: pd.DataFrame) -> pd.DataFrame:
