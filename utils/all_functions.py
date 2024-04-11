@@ -537,7 +537,16 @@ def determinize_afnd(csv_df, afnd_df, final_states):
     return afnd_df, final_states
 
 
-def error_states(afd_df, final_states):
+def error_states(afd_df: pd.DataFrame, final_states: list) -> tuple:
+    """Esta função adiciona estados de erro ao AFD (Autômato Finito Determinístico) para garantir que todos os estados tenham transições para todos os símbolos do alfabeto.
+
+    Args:
+        afd_df (pd.DataFrame): DataFrame com o AFD.
+        final_states (list): Lista de estados finais.
+
+    Returns:
+        tuple: Tupla com o AFD atualizado e a lista de estados finais.
+    """
 
     # Contre de erro para estados que não possuem transição para todos os simbolos do alfabeto
     new_state_error_transition = '*'
@@ -633,7 +642,16 @@ def recursive_search(dataframe: pd.DataFrame, word: list) -> list:
     return search_from_state('S')
 
 
-def af_mapping(csv_df: pd.DataFrame, afd_df: pd.DataFrame) -> list:
+def af_mapping(csv_df: pd.DataFrame, afd_df: pd.DataFrame) -> tuple:
+    """Essa função mapeia novas palavras em um AFD. Verificando se a palavra é aceita ou não pelo autômato.
+
+    Args:
+        csv_df (pd.DataFrame): DataFrame com as palavras a serem mapeadas.
+        afd_df (pd.DataFrame): DataFrame com o AFD.
+
+    Returns:
+        tuple: Tupla com as palavras mapeadas e a fita.
+    """
     words = read_new_words(csv_df)
     for index, word in enumerate(words):
         states = recursive_search(afd_df, word['word'])
@@ -644,6 +662,14 @@ def af_mapping(csv_df: pd.DataFrame, afd_df: pd.DataFrame) -> list:
 
 
 def lexical_recognition(words: dict) -> pd.DataFrame:
+    """Esta função cria um DataFrame com as palavras e seus respectivos estados finais.
+
+    Args:
+        words (dict): Dicionário com as palavras, seus índices e estados finais.
+
+    Returns:
+        pd.DataFrame: DataFrame com as palavras, seus índices e estados finais.
+    """
     lexical_df = pd.DataFrame({'index': [word['index'] for word in words],
                                'states': [word['states'][-1] for word in words],
                                'word': [word['word'] for word in words]})
