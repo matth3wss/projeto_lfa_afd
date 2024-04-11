@@ -643,5 +643,9 @@ def af_mapping(csv_df: pd.DataFrame, afd_df: pd.DataFrame) -> list:
     return words, ribbon
 
 
-def lexical_recognition(afd_df: pd.DataFrame) -> pd.DataFrame:
-    pass
+def lexical_recognition(words: dict) -> pd.DataFrame:
+    last_states = [word['states'][-1] for word in words]
+    lexical_df = pd.DataFrame({'index': [word['index'] for word in words],
+                               'states': last_states,
+                               'word': [word['word'] for word in words]})
+    return lexical_df
