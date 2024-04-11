@@ -476,7 +476,7 @@ def remove_dead_states(afnd_df, final_states):
     return afnd_df
 
 
-def determinize_afnd(csv_df, afnd_df):
+def determinize_afnd(csv_df, afnd_df, final_states):
     """
     Preenche uma linha do AFND (Autômato Finito Determinístico) com o símbolo de indeterminismo. Juntamente com os estados de cada transição.
 
@@ -529,7 +529,12 @@ def determinize_afnd(csv_df, afnd_df):
             # Use the apply method to apply the transformation to each cell
             afnd_df[col] = afnd_df[col].apply(
                 lambda x: f'[{indeterminism_without_comma}]' if x == value else x)
-    return afnd_df
+            
+    for state in afnd_df['sigma']:
+        if any(x in state for x in final_states) and state not in final_states:
+            final_states.append(state)
+    
+    return afnd_df, final_states
 
 
 def read_new_words(csv_df: pd.DataFrame) -> dict:
