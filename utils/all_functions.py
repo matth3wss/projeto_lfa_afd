@@ -381,6 +381,20 @@ def create_afnd(csv_df):
     afnd_df = populate_variables(afnd_df, words)
     return afnd_df, final_states
 
+def mark_final_states(dataframe: pd.DataFrame, final_states: list) -> pd.DataFrame:
+    """Esta função marca os estados finais de um AFND (Autômato Finito Não Determinístico) em um DataFrame.
+
+    Args:
+        dataframe (pd.DataFrame): DataFrame com o AFND.
+        final_states (list): Lista de estados finais.
+
+    Returns:
+        pd.DataFrame: DataFrame com os estados finais marcados.
+    """
+    for state in final_states:
+        dataframe.loc[dataframe['sigma'] == state, 'sigma'] = f'*{state}'
+    return dataframe
+
 
 def remove_unreachable_states(afnd_df):
     """
