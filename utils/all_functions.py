@@ -563,7 +563,7 @@ def error_states(afd_df: pd.DataFrame, final_states: list) -> tuple:
     """
 
     # Contre de erro para estados que não possuem transição para todos os simbolos do alfabeto
-    new_state_error_transition = '*'
+    new_state_error_transition = '&'
     afd_df.loc[len(afd_df)] = [new_state_error_transition] + \
         [new_state_error_transition] * (len(afd_df.columns) - 1)
 
