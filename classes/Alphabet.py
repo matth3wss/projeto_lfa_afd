@@ -15,3 +15,6 @@ class Alphabet:
     @classmethod
     def index_to_letter(cls, index: int) -> str:  # Added self parameter
         return cls.alphabet[index]  # Corrected reference to class variable
+
+
+alphabet = Alphabet()

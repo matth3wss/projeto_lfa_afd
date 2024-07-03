@@ -3,11 +3,8 @@ from collections import OrderedDict as od
 
 import pandas as pd
 
-from classes.Alphabet import Alphabet
-from classes.RegexPatterns import RegexPatterns
-
-patterns = RegexPatterns()
-alphabet = Alphabet()
+from classes.Alphabet import alphabet
+from classes.RegexPatterns import patterns
 
 
 def extract_terminals(csv_df):

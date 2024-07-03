@@ -16,3 +16,6 @@ class RegexPatterns:
     def variable(cls, text):
         pattern = r"([a-z])<([A-Z])>"
         return re.findall(pattern, text)
+
+
+patterns = RegexPatterns()
