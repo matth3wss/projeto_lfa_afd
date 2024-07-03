@@ -1,9 +1,10 @@
-import csv
-import pandas as pd
-from collections import OrderedDict as od
 import string
-from classes.RegexPatterns import RegexPatterns
+from collections import OrderedDict as od
+
+import pandas as pd
+
 from classes.Alphabet import Alphabet
+from classes.RegexPatterns import RegexPatterns
 
 patterns = RegexPatterns()
 alphabet = Alphabet()
@@ -19,8 +20,12 @@ def extract_terminals(csv_df):
     Retorna:
     lista: Uma lista de letras terminais individuais obtidas das palavras reservadas.
     """
-    terminal_letters = [c for word in (row["word"] for row in reserved_words_and_counts(
-        csv_df))for char in word for c in char]
+    terminal_letters = [
+        c
+        for word in (row["word"] for row in reserved_words_and_counts(csv_df))
+        for char in word
+        for c in char
+    ]
     return terminal_letters
 
 
@@ -38,8 +43,17 @@ def unique_terminal_letters(csv_df):
     - A função ignora letras maiúsculas, 'ε' (épsilon) e caracteres não alfabéticos.
     - Utiliza o 'collections.OrderedDict' para preservar a ordem das letras terminais únicas.
     """
-    terminal_letters = list(od.fromkeys(
-        (c for row in csv_df.values for char in row for c in char if c.islower() and c != 'ε')))
+    terminal_letters = list(
+        od.fromkeys(
+            (
+                c
+                for row in csv_df.values
+                for char in row
+                for c in char
+                if c.islower() and c != "ε"
+            )
+        )
+    )
     return terminal_letters
 
 
@@ -65,15 +79,13 @@ def reserved_words_and_counts(csv_df):
     - A lista retornada contém dicionários com informações sobre cada palavra reservada e seu tamanho.
     """
     reserved_words = [
-        row for row in csv_df.values for char in row if not patterns.variable(char)]
+        row for row in csv_df.values for char in row if not patterns.variable(char)
+    ]
     size = [len(c) for word in reserved_words for c in word]
 
     json_data = []
     for word, size in zip(reserved_words, size):
-        json = {
-            "word": word,
-            "size": size
-        }
+        json = {"word": word, "size": size}
         json_data.append(json)
 
     return json_data
@@ -97,17 +109,18 @@ def create_afnd_skeleton(csv_df):
     """
     terminal_letters = unique_terminal_letters(csv_df)
     afnd_skeleton_df = pd.DataFrame(
-        columns=['sigma'] + [str(c) for c in terminal_letters])
-    afnd_skeleton_df.at[0, 'sigma'] = 'S'
+        columns=["sigma"] + [str(c) for c in terminal_letters]
+    )
+    afnd_skeleton_df.at[0, "sigma"] = "S"
 
     alphabet = list(string.ascii_uppercase)
     size = len(extract_terminals(csv_df))
 
     symbols = [symbol for letters in alphabet[:size] for symbol in letters]
     for i, symbol in enumerate(symbols):
-        afnd_skeleton_df.at[i+1, "sigma"] = symbol
+        afnd_skeleton_df.at[i + 1, "sigma"] = symbol
 
-    afnd_skeleton_df = afnd_skeleton_df.fillna('')
+    afnd_skeleton_df = afnd_skeleton_df.fillna("")
 
     return afnd_skeleton_df
 
@@ -133,21 +146,17 @@ def extract_variables_df(csv_df):
     - O resultado é uma lista de dicionários contendo informações sobre cada variável encontrada.
     """
 
-    lines = [str(row)
-             for row in csv_df.values for char in row if patterns.symbol(char)]
+    lines = [str(row) for row in csv_df.values for char in row if patterns.symbol(char)]
     rg = []
 
     for line in lines:
-        symbol = [match[1]
-                  for match in patterns.symbol(line) if patterns.variable(line)]
+        symbol = [
+            match[1] for match in patterns.symbol(line) if patterns.variable(line)
+        ]
         terminals = [match[0] for match in patterns.variable(line)]
         variables = [match[1] for match in patterns.variable(line)]
 
-        json = {
-            "symbol": symbol,
-            "terminals": terminals,
-            "variables": variables
-        }
+        json = {"symbol": symbol, "terminals": terminals, "variables": variables}
         rg.append(json)
     return rg
 
@@ -173,8 +182,14 @@ def extract_variables_list(words):
     - Os símbolos são identificados com base nos valores adjacentes à ocorrência do "::=" na lista.
     - Os resultados são organizados em uma lista de dicionários, cada um representando uma variável.
     """
-    symbols = [letter for word in words for string in word if not patterns.variable(
-        string) and patterns.symbol_alt(string) for letter in string if letter.isalpha()]
+    symbols = [
+        letter
+        for word in words
+        for string in word
+        if not patterns.variable(string) and patterns.symbol_alt(string)
+        for letter in string
+        if letter.isalpha()
+    ]
     rg = []
 
     for i, symbol in enumerate(symbols):
@@ -183,15 +198,17 @@ def extract_variables_list(words):
         for j, word in enumerate(words[i]):
             if not patterns.variable(word):
                 continue
-            terminals.append([match[0] for match in patterns.variable(
-                word) if patterns.variable(word) is not None])
-            variables.append([match[1] for match in patterns.variable(
-                word) if patterns.variable(word) is not None])
-        json = {
-            "symbol": symbol,
-            "terminals": terminals,
-            "variables": variables
-        }
+            terminals.append([
+                match[0]
+                for match in patterns.variable(word)
+                if patterns.variable(word) is not None
+            ])
+            variables.append([
+                match[1]
+                for match in patterns.variable(word)
+                if patterns.variable(word) is not None
+            ])
+        json = {"symbol": symbol, "terminals": terminals, "variables": variables}
         rg.append(json)
     return rg
 
@@ -199,20 +216,32 @@ def extract_variables_list(words):
 def replace_variables(afnd_df, csv_df, last_state):
     alphabet = list(string.ascii_uppercase)
 
-    old_variables = list(od.fromkeys(variable for line in extract_variables_df(
-        csv_df) for variable in line["variables"]))
+    old_variables = list(
+        od.fromkeys(
+            variable
+            for line in extract_variables_df(csv_df)
+            for variable in line["variables"]
+        )
+    )
     new_states_count = len(old_variables)
     index_last_state = alphabet.index(last_state) + 1
     total = new_states_count + index_last_state
-    new_symbols = [symbol for letters in alphabet[index_last_state:total]
-                   for symbol in letters]
+    new_symbols = [
+        symbol for letters in alphabet[index_last_state:total] for symbol in letters
+    ]
 
     # Update the "sigma" column in afnd_df starting from the end
     for i, symbol in enumerate(new_symbols, start=index_last_state):
-        afnd_df.at[i+1, "sigma"] = symbol
+        afnd_df.at[i + 1, "sigma"] = symbol
 
-    sentences = [str(word) for row in csv_df.values for char in row if patterns.symbol(
-        char) for sentence in row for word in sentence.split()]
+    sentences = [
+        str(word)
+        for row in csv_df.values
+        for char in row
+        if patterns.symbol(char)
+        for sentence in row
+        for word in sentence.split()
+    ]
     new_sentences = sentences.copy()
 
     new_variables = []
@@ -227,18 +256,26 @@ def replace_variables(afnd_df, csv_df, last_state):
                     new_sentences[j] = f"{m[0]}<{new_symbols[i]}>"
                     json_data = {
                         "old_variable": old_variables[i],
-                        "new_variable": new_symbols[i]
+                        "new_variable": new_symbols[i],
                     }
                     new_variables.append(json_data)
 
-    new_variables = [dict(t) for t in {tuple(d.items())
-                                       # remove duplicates
-                                       for d in new_variables}]
+    new_variables = [
+        dict(t)
+        for t in {
+            tuple(d.items())
+            # remove duplicates
+            for d in new_variables
+        }
+    ]
     # sort by new variable
-    new_variables = sorted(new_variables, key=lambda k: k['new_variable'])
+    new_variables = sorted(new_variables, key=lambda k: k["new_variable"])
 
-    symbols = [word for word in new_sentences if not patterns.variable(
-        word) and patterns.symbol_alt(word)]
+    symbols = [
+        word
+        for word in new_sentences
+        if not patterns.variable(word) and patterns.symbol_alt(word)
+    ]
 
     # recria a nested list, não sei como funciona "copilot fez"
     def recreate_nested_structure(new_sentences, symbols):
@@ -251,7 +288,9 @@ def replace_variables(afnd_df, csv_df, last_state):
                     if j > new_sentences.index(symbol):
                         words.append(word)
                 else:
-                    if j > new_sentences.index(symbol) and j < new_sentences.index(symbols[i + 1]):
+                    if j > new_sentences.index(symbol) and j < new_sentences.index(
+                        symbols[i + 1]
+                    ):
                         words.append(word)
             words.insert(0, symbol)
             nested_list.append(words)
@@ -262,32 +301,34 @@ def replace_variables(afnd_df, csv_df, last_state):
 
     for data in new_variables:
         for i, words in enumerate(new_words):
-            new_words[i] = [word.replace(f'<{data["old_variable"]}>', f'<{
-                                         data["new_variable"]}>') for word in words]
+            new_words[i] = [
+                word.replace(f'<{data["old_variable"]}>', f'<{data["new_variable"]}>')
+                for word in words
+            ]
 
-    afnd_df = afnd_df.fillna('')
+    afnd_df = afnd_df.fillna("")
 
     return afnd_df, new_words
 
 
 def insert_value_df(df, search_column, search_row, target_column, value):
-    """ Esta função insere um valor em uma célula de um DataFrame, ou concatena o valor com o valor existente na célula.
+    """Esta função insere um valor em uma célula de um DataFrame, ou concatena o valor com o valor existente na célula.
 
     Args:
         df (pandas.DataFrame): O DataFrame a ser modificado
         search_column (str): O nome da coluna a ser pesquisada
         search_row (str): O valor da linha a ser pesquisada
         target_column (str): O nome da coluna onde o valor será inserido ou concatenado
-        value (str): O valor a ser inserido ou concatenado  
+        value (str): O valor a ser inserido ou concatenado
 
     Returns:
         df: O DataFrame modificado
 
     """
-    if value == '' or value == None:
-        df.fillna('', inplace=True)
+    if value == "" or value is None:
+        df.fillna("", inplace=True)
         return df
-    if df.loc[df[search_column] == search_row, target_column].any() == False:
+    if not df.loc[df[search_column] == search_row, target_column].any():
         df.loc[df[search_column] == search_row, target_column] = value
         return df
     df.loc[df[search_column] == search_row, target_column] += f"{','}{value}"
@@ -312,10 +353,15 @@ def populate_variables(afnd_df, words):
     new_variables = extract_variables_list(words)
 
     for new_variable in new_variables:
-        for i, terminals, variables in zip(range(len(new_variable["terminals"])), new_variable["terminals"], new_variable["variables"]):
+        for i, terminals, variables in zip(
+            range(len(new_variable["terminals"])),
+            new_variable["terminals"],
+            new_variable["variables"],
+        ):
             for terminal, variable in zip(terminals, variables):
                 afnd_df = insert_value_df(
-                    afnd_df, 'sigma', new_variable["symbol"], terminal, variable)
+                    afnd_df, "sigma", new_variable["symbol"], terminal, variable
+                )
     return afnd_df
 
 
@@ -340,8 +386,7 @@ def create_afnd(csv_df):
     flag = False
 
     for row in reserved_counts:
-
-        initial_state = 'S'
+        initial_state = "S"
 
         word = [c for char in row["word"] for c in char]
 
@@ -349,29 +394,54 @@ def create_afnd(csv_df):
             if not final_states:  # Se não for um estado final
                 if not flag:  # Se estiver vazio, não tem estado final até o fim da primeira palavra
                     afnd_df = insert_value_df(
-                        afnd_df, 'sigma', initial_state, char, alphabet.index_to_letter(i))
+                        afnd_df,
+                        "sigma",
+                        initial_state,
+                        char,
+                        alphabet.index_to_letter(i),
+                    )
                     last_state = alphabet.index_to_letter(i)
                     flag = True
                     continue
 
                 if flag and last_state == alphabet.index_to_letter(0):
                     afnd_df = insert_value_df(
-                        afnd_df, 'sigma', last_state, char, alphabet.index_to_letter(1))
+                        afnd_df, "sigma", last_state, char, alphabet.index_to_letter(1)
+                    )
                     last_state = alphabet.index_to_letter(1)
 
                 elif last_state != alphabet.index_to_letter(0):
                     afnd_df = insert_value_df(
-                        afnd_df, 'sigma', last_state, char, alphabet.get_next_letter(last_state))
+                        afnd_df,
+                        "sigma",
+                        last_state,
+                        char,
+                        alphabet.get_next_letter(last_state),
+                    )
                     last_state = alphabet.get_next_letter(last_state)
             else:
                 if last_state in (final_states):
-                    if not afnd_df.loc[afnd_df['sigma'] == last_state, char].isna().all():
+                    if (
+                        not afnd_df.loc[afnd_df["sigma"] == last_state, char]
+                        .isna()
+                        .all()
+                    ):
                         afnd_df = insert_value_df(
-                            afnd_df, 'sigma', initial_state, char, alphabet.get_next_letter(last_state))
+                            afnd_df,
+                            "sigma",
+                            initial_state,
+                            char,
+                            alphabet.get_next_letter(last_state),
+                        )
                         last_state = alphabet.get_next_letter(last_state)
                     continue
                 afnd_df = insert_value_df(
-                    afnd_df, 'sigma', last_state, char, alphabet.get_next_letter(last_state))
+                    afnd_df,
+                    "sigma",
+                    last_state,
+                    char,
+                    alphabet.get_next_letter(last_state),
+                )
                 last_state = alphabet.get_next_letter(last_state)
 
         if final_states is not None:
@@ -380,6 +450,7 @@ def create_afnd(csv_df):
 
     afnd_df = populate_variables(afnd_df, words)
     return afnd_df, final_states
+
 
 def mark_final_states(dataframe: pd.DataFrame, final_states: list) -> pd.DataFrame:
     """Esta função marca os estados finais de um AFND (Autômato Finito Não Determinístico) em um DataFrame.
@@ -392,7 +463,7 @@ def mark_final_states(dataframe: pd.DataFrame, final_states: list) -> pd.DataFra
         pd.DataFrame: DataFrame com os estados finais marcados.
     """
     for state in final_states:
-        dataframe.loc[dataframe['sigma'] == state, 'sigma'] = f'*{state}'
+        dataframe.loc[dataframe["sigma"] == state, "sigma"] = f"*{state}"
     return dataframe
 
 
@@ -414,20 +485,26 @@ def remove_unreachable_states(afnd_df):
 
     def recursive_search(state):
         for terminal in afnd_df.columns[1:]:
-            if afnd_df.loc[afnd_df['sigma'] == state, terminal].any():
-                states = afnd_df.loc[afnd_df['sigma'] ==
-                                     state, terminal].str.split(",").values[0]
+            if afnd_df.loc[afnd_df["sigma"] == state, terminal].any():
+                states = (
+                    afnd_df.loc[afnd_df["sigma"] == state, terminal]
+                    .str.split(",")
+                    .values[0]
+                )
                 for s in states:
-                    if s != '' and s not in visited_states:
+                    if s != "" and s not in visited_states:
                         visited_states.add(s)
                         recursive_search(s)
         return sorted(visited_states)  # Sort the visited states
 
     # drop unreachable states
-    reachable_states = recursive_search('S')
-    unreachable_states = [state for state in afnd_df['sigma']
-                          if state not in reachable_states and state != 'S']
-    afnd_df = afnd_df[~afnd_df['sigma'].isin(unreachable_states)]
+    reachable_states = recursive_search("S")
+    unreachable_states = [
+        state
+        for state in afnd_df["sigma"]
+        if state not in reachable_states and state != "S"
+    ]
+    afnd_df = afnd_df[~afnd_df["sigma"].isin(unreachable_states)]
 
     return afnd_df
 
@@ -454,7 +531,9 @@ def remove_dead_states(afnd_df, final_states):
         stack = [state]  # Pilha de estados a serem visitados
 
         while stack:
-            current_state = stack.pop()  # Remove o último estado da pilha para processamento
+            current_state = (
+                stack.pop()
+            )  # Remove o último estado da pilha para processamento
             if current_state in visited_states:
                 continue
             visited_states.add(current_state)
@@ -463,8 +542,11 @@ def remove_dead_states(afnd_df, final_states):
 
             for terminal in afnd_df.columns[1:]:
                 # Obtém os próximos estados possíveis a partir do estado atual e da entrada do terminal atual
-                next_states = afnd_df.loc[afnd_df['sigma'] ==
-                                          current_state, terminal].str.split(",").values
+                next_states = (
+                    afnd_df.loc[afnd_df["sigma"] == current_state, terminal]
+                    .str.split(",")
+                    .values
+                )
 
                 if next_states.size > 0:
                     for next_state in next_states[0]:
@@ -475,17 +557,20 @@ def remove_dead_states(afnd_df, final_states):
 
     # Encontra todos os estados mortos
     dead_states = set()
-    for state in afnd_df['sigma']:
+    for state in afnd_df["sigma"]:
         if not can_reach_final_state(state):
             dead_states.add(state)
 
-    for state in dead_states:     # Remove todas as transições dos estados mortos
+    for state in dead_states:  # Remove todas as transições dos estados mortos
         for column in afnd_df.columns[1:]:
-            afnd_df[column] = afnd_df[column].apply(lambda x: ','.join(
-                [elem for elem in str(x).split(',') if elem.strip() != state]))
+            afnd_df[column] = afnd_df[column].apply(
+                lambda x: ",".join([
+                    elem for elem in str(x).split(",") if elem.strip() != state
+                ])
+            )
 
     # Remove os estados mortos do AFND
-    afnd_df = afnd_df[~afnd_df['sigma'].isin(dead_states)]
+    afnd_df = afnd_df[~afnd_df["sigma"].isin(dead_states)]
 
     return afnd_df
 
@@ -502,9 +587,12 @@ def determinize_afnd(csv_df, afnd_df, final_states):
     Retorna:
     pandas.DataFrame: O DataFrame do AFD atualizado com o símbolo de indeterminismo.
     """
-    indeterminisms = [(afnd_df.loc[afnd_df[terminal].str.len() > 1, terminal]).tolist() for terminal in afnd_df.columns[1:]
-                      # Lista de listas contendo os indeterminismos iniciais do AFND
-                      if not afnd_df.loc[afnd_df[terminal].str.len() > 1, terminal].empty]
+    indeterminisms = [
+        (afnd_df.loc[afnd_df[terminal].str.len() > 1, terminal]).tolist()
+        for terminal in afnd_df.columns[1:]
+        # Lista de listas contendo os indeterminismos iniciais do AFND
+        if not afnd_df.loc[afnd_df[terminal].str.len() > 1, terminal].empty
+    ]
 
     all_indeterminisms = indeterminisms.copy()
 
@@ -514,21 +602,33 @@ def determinize_afnd(csv_df, afnd_df, final_states):
         for indeterminism in enumerate(indeterminisms):
             # Converte a lista de apenas um elemento para uma string [A,B] -> "A,B"
             [indeterminism_symbol] = indeterminisms[0]
-            last_index = afnd_df['sigma'].index[-1]
+            last_index = afnd_df["sigma"].index[-1]
             afnd_df.at[last_index + 1, "sigma"] = indeterminism_symbol
 
             # Percorre os estados do indeterminismo
-            for state in afnd_df['sigma'].iloc[-1].split(','):
+            for state in afnd_df["sigma"].iloc[-1].split(","):
                 for column in columns:  # Percorre as colunas do AFND
-                    afnd_df = insert_value_df(afnd_df, 'sigma', indeterminism_symbol,
-                                              column, afnd_df.loc[afnd_df['sigma'] == state, column].iloc[0])
+                    afnd_df = insert_value_df(
+                        afnd_df,
+                        "sigma",
+                        indeterminism_symbol,
+                        column,
+                        afnd_df.loc[afnd_df["sigma"] == state, column].iloc[0],
+                    )
             indeterminisms.pop(0)
 
             # Seleciona a última linha do AFND
             last_row_df = afnd_df.iloc[-1].to_frame().T
-            new_indeterminisms = [(last_row_df.loc[last_row_df[terminal].str.len() > 1, terminal]).tolist() for terminal in last_row_df.columns[1:]
-                                  # Seleciona os indeterminismos da última linha do AFND
-                                  if not last_row_df.loc[last_row_df[terminal].str.len() > 1, terminal].empty]
+            new_indeterminisms = [
+                (
+                    last_row_df.loc[last_row_df[terminal].str.len() > 1, terminal]
+                ).tolist()
+                for terminal in last_row_df.columns[1:]
+                # Seleciona os indeterminismos da última linha do AFND
+                if not last_row_df.loc[
+                    last_row_df[terminal].str.len() > 1, terminal
+                ].empty
+            ]
 
             # Adiciona os novos indeterminismos à lista de indeterminismos
             indeterminisms.extend(new_indeterminisms)
@@ -537,14 +637,15 @@ def determinize_afnd(csv_df, afnd_df, final_states):
 
     for indeterminism in all_indeterminisms:
         value = indeterminism[0]
-        indeterminism_without_comma = value.replace(',', '')
+        indeterminism_without_comma = value.replace(",", "")
 
         for col in afnd_df.columns:
             # Use the apply method to apply the transformation to each cell
             afnd_df[col] = afnd_df[col].apply(
-                lambda x: f'[{indeterminism_without_comma}]' if x == value else x)
+                lambda x: f"[{indeterminism_without_comma}]" if x == value else x
+            )
 
-    for state in afnd_df['sigma']:
+    for state in afnd_df["sigma"]:
         if any(x in state for x in final_states) and state not in final_states:
             final_states.append(state)
 
@@ -563,23 +664,26 @@ def error_states(afd_df: pd.DataFrame, final_states: list) -> tuple:
     """
 
     # Contre de erro para estados que não possuem transição para todos os simbolos do alfabeto
-    new_state_error_transition = '&'
-    afd_df.loc[len(afd_df)] = [new_state_error_transition] + \
-        [new_state_error_transition] * (len(afd_df.columns) - 1)
+    new_state_error_transition = "&"
+    afd_df.loc[len(afd_df)] = [new_state_error_transition] + [
+        new_state_error_transition
+    ] * (len(afd_df.columns) - 1)
 
     for column in afd_df.columns:
         for index, value in afd_df[column].items():
-            if value == '' or value == None:
+            if value == "" or value is None:
                 afd_df.at[index, column] = new_state_error_transition
 
     # Controle de erro para estados que não possuem o mapeamento de todos os simbolos da gramática
-    new_state_error = 'Z'
-    afd_df.loc[len(afd_df)] = [new_state_error] + \
-        [new_state_error] * (len(afd_df.columns) - 1)
+    new_state_error = "Z"
+    afd_df.loc[len(afd_df)] = [new_state_error] + [new_state_error] * (
+        len(afd_df.columns) - 1
+    )
 
-    new_column_name = 'etc.'
-    afd_df[new_column_name] = [new_state_error] * \
-        len(afd_df)  # ou passa direto a variável new_state
+    new_column_name = "etc."
+    afd_df[new_column_name] = [new_state_error] * len(
+        afd_df
+    )  # ou passa direto a variável new_state
 
     final_states.append(new_state_error_transition)
     final_states.append(new_state_error)
@@ -588,7 +692,7 @@ def error_states(afd_df: pd.DataFrame, final_states: list) -> tuple:
 
 
 def read_new_words(csv_df: pd.DataFrame) -> dict:
-    """ Esta função lê um arquivo csv e retorna um dicionário com as palavras e seus respectivos índices.
+    """Esta função lê um arquivo csv e retorna um dicionário com as palavras e seus respectivos índices.
 
     Args:
         csv_df (pd.DataFrame): DataFrame com as palavras a serem lidas.
@@ -596,15 +700,15 @@ def read_new_words(csv_df: pd.DataFrame) -> dict:
     Returns:
         dict: Dicionário com as palavras e seus respectivos índices.
     """
-    csv_df.rename(columns={0: 'entrada'}, inplace=True)
+    csv_df.rename(columns={0: "entrada"}, inplace=True)
     words = []
 
-    for index, value in enumerate(csv_df['entrada'], start=1):
-        lines = [x for x in value.split(' ') if x != '']
+    for index, value in enumerate(csv_df["entrada"], start=1):
+        lines = [x for x in value.split(" ") if x != ""]
         for word in lines:
             json_data = {
-                'word': word,
-                'index': index,
+                "word": word,
+                "index": index,
             }
             words.append(json_data)
     return words
@@ -636,24 +740,25 @@ def recursive_search(dataframe: pd.DataFrame, word: list) -> list:
         for terminal in word:
             # print(terminal)
             if terminal in dataframe.columns:
-                if dataframe.loc[dataframe['sigma'] == state, terminal].any():
-                    state = dataframe.loc[dataframe['sigma'] ==
-                                          state, terminal].values[0]
+                if dataframe.loc[dataframe["sigma"] == state, terminal].any():
+                    state = dataframe.loc[dataframe["sigma"] == state, terminal].values[
+                        0
+                    ]
 
                     if state not in visited_states:
                         visited_states.append(state)
                         search_from_state(state, word[1:])
             else:
-                if dataframe.loc[dataframe['sigma'] == state, 'etc.'].any():
-                    state = dataframe.loc[dataframe['sigma']
-                                          == state, 'etc.'].values[0]
+                if dataframe.loc[dataframe["sigma"] == state, "etc."].any():
+                    state = dataframe.loc[dataframe["sigma"] == state, "etc."].values[0]
 
                     if state not in visited_states:
                         visited_states.append(state)
                         return visited_states
         return visited_states
+
     # check type of teste
-    return search_from_state('S')
+    return search_from_state("S")
 
 
 def af_mapping(csv_df: pd.DataFrame, afd_df: pd.DataFrame) -> tuple:
@@ -668,9 +773,9 @@ def af_mapping(csv_df: pd.DataFrame, afd_df: pd.DataFrame) -> tuple:
     """
     words = read_new_words(csv_df)
     for index, word in enumerate(words):
-        states = recursive_search(afd_df, word['word'])
-        words[index].update({'states': states})
-    ribbon = [word['states'][-1] for word in words] + ['$']
+        states = recursive_search(afd_df, word["word"])
+        words[index].update({"states": states})
+    ribbon = [word["states"][-1] for word in words] + ["$"]
 
     return words, ribbon
 
@@ -684,7 +789,9 @@ def lexical_recognition(words: dict) -> pd.DataFrame:
     Returns:
         pd.DataFrame: DataFrame com as palavras, seus índices e estados finais.
     """
-    lexical_df = pd.DataFrame({'index': [word['index'] for word in words],
-                               'states': [word['states'][-1] for word in words],
-                               'word': [word['word'] for word in words]})
+    lexical_df = pd.DataFrame({
+        "index": [word["index"] for word in words],
+        "states": [word["states"][-1] for word in words],
+        "word": [word["word"] for word in words],
+    })
     return lexical_df
