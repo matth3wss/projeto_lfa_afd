@@ -1,8 +1,5 @@
-se
-entao
-senao
-oi
-que
-
-<S> ::= a<A> | e<A> | i<A> | o<A> | u<A>
-<A> ::= a<A> | e<A> | i<A> | o<A> | u<A> | ε
+if
+else
+then
+act
+cdt

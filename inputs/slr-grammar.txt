@@ -1,0 +1,5 @@
+S' -> S
+S -> if A then B C
+A -> cdt
+B -> act
+C -> else B
